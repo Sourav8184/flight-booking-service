@@ -1,0 +1,10 @@
+const BOOKING_STATUS = Object.freeze({
+  INITIAL: 'INITIATED',
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+});
+
+module.exports = {
+  BOOKING_STATUS,
+};
