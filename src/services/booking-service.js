@@ -4,6 +4,7 @@ const { StatusCodes } = require('http-status-codes');
 const { BookingRepository } = require('../repositories');
 const db = require('../models');
 const { ServerConfig } = require('../config');
+const { ENUMS } = require('../utils/common');
 const bookingRepository = new BookingRepository();
 
 async function createBooking(data) {
@@ -51,6 +52,60 @@ async function createBooking(data) {
   }
 }
 
+async function makePayment(data) {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const bookingDetail = await bookingRepository.getBookingDetails(data, transaction);
+
+    if (bookingDetail.status === ENUMS.BOOKING_STATUS.CANCELLED) {
+      throw new AppError('Booking is already cancelled', StatusCodes.BAD_REQUEST);
+    }
+
+    if (bookingDetail.status === ENUMS.BOOKING_STATUS.CONFIRMED) {
+      throw new AppError('Booking is already confirmed', StatusCodes.BAD_REQUEST);
+    }
+
+    const bookingTime = new Date(bookingDetail.createdAt);
+    const currentTime = new Date();
+
+    const timeDiff = (currentTime - bookingTime) / (1000 * 60); // time difference in minutes
+
+    if (timeDiff > 20) {
+      await bookingRepository.updateBookingDetails(
+        data.bookingId,
+        { status: ENUMS.BOOKING_STATUS.CANCELLED },
+        transaction,
+      );
+      throw new AppError('Booking Expired', StatusCodes.BAD_REQUEST);
+    }
+
+    if (Number(bookingDetail.totalCost) !== Number(data.totalCost)) {
+      throw new AppError('Invalid payment amount', StatusCodes.BAD_REQUEST);
+    }
+
+    if (Number(bookingDetail.userId) !== Number(data.userId)) {
+      throw new AppError('Invalid userId', StatusCodes.BAD_REQUEST);
+    }
+
+    // assume payment is successful
+    const updatedBooking = await bookingRepository.updateBookingDetails(
+      data.bookingId,
+      { status: ENUMS.BOOKING_STATUS.CONFIRMED },
+      transaction,
+    );
+
+    await transaction.commit();
+    return updatedBooking;
+  } catch (error) {
+    await transaction.rollback();
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Payment Failed', StatusCodes.BAD_REQUEST);
+  }
+}
+
 module.exports = {
   createBooking,
+  makePayment,
 };
