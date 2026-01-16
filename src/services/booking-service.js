@@ -139,7 +139,18 @@ async function cancelBooking(bookingId) {
   }
 }
 
+async function cancelOldBookings() {
+  try {
+    // ✅ bookings older than 5 minutes
+    const time = new Date(Date.now() - 5 * 60 * 1000);
+    await bookingRepository.cancelOldBookings(time);
+  } catch (error) {
+    throw new AppError('Error in cancelling old bookings', StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+}
+
 module.exports = {
   createBooking,
   makePayment,
+  cancelOldBookings,
 };
