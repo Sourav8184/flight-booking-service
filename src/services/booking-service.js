@@ -35,11 +35,21 @@ async function createBooking(data) {
     // create the booking
     const booking = await bookingRepository.createBooking(bookingPayload, transaction);
 
-    // decrement the seats in flight service
-    await axios.patch(`${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${data.flightId}/seats`, {
-      seats: data.totalSeats,
-      dec: true,
-    });
+    // Call Flight Service to reserve (decrement) seats for the selected flight
+    // This is an internal service-to-service request, so we use `x-service-key`
+    // to ensure only Booking Service can perform seat reservation.
+    await axios.patch(
+      `${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${data.flightId}/reserve-seats`,
+      {
+        seats: data.totalSeats,
+        dec: true,
+      },
+      {
+        headers: {
+          'x-service-key': process.env.BOOKING_SERVICE_KEY,
+        },
+      },
+    );
 
     await transaction.commit();
     return booking;
