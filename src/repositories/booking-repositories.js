@@ -52,6 +52,15 @@ class BookingRepository extends CrudRepository {
       },
     );
   }
+
+  async getByFilter(filter) {
+    try {
+      const bookings = await Booking.findAll(filter);
+      return bookings;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = BookingRepository;
