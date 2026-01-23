@@ -202,65 +202,10 @@ async function getBookingById(data) {
   }
 }
 
-async function updateBooking(data) {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const booking = await bookingRepository.get(data.bookingId);
-
-    if (!booking) {
-      throw new AppError('Booking not found', StatusCodes.NOT_FOUND);
-    }
-
-    // Check if booking belongs to the user
-    if (booking.userId !== Number(data.userId)) {
-      throw new AppError('You can only update your own bookings', StatusCodes.FORBIDDEN);
-    }
-
-    // Only allow updating status
-    if (!data.status) {
-      throw new AppError('Status is required', StatusCodes.BAD_REQUEST);
-    }
-
-    // Validate status value
-    const validStatuses = Object.values(ENUMS.BOOKING_STATUS);
-    if (!validStatuses.includes(data.status)) {
-      throw new AppError(
-        `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
-        StatusCodes.BAD_REQUEST,
-      );
-    }
-
-    // Prevent downgrading from confirmed status
-    if (
-      booking.status === ENUMS.BOOKING_STATUS.CONFIRMED &&
-      data.status !== ENUMS.BOOKING_STATUS.CONFIRMED
-    ) {
-      throw new AppError('Cannot update a confirmed booking', StatusCodes.BAD_REQUEST);
-    }
-
-    // Update booking status
-    const updatedBooking = await bookingRepository.updateBookingDetails(
-      data.bookingId,
-      { status: data.status },
-      transaction,
-    );
-
-    await transaction.commit();
-    return updatedBooking;
-  } catch (error) {
-    await transaction.rollback();
-    if (error instanceof AppError) {
-      throw error;
-    }
-    throw new AppError('Cannot update booking', StatusCodes.BAD_REQUEST);
-  }
-}
-
 module.exports = {
   createBooking,
   getBookings,
   getBookingById,
-  updateBooking,
   cancelBooking,
   makePayment,
   cancelOldBookings,

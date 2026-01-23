@@ -14,9 +14,6 @@ router.get('/', verifyToken, BookingController.getBookings);
 // Get booking by ID (user can only view own booking)
 router.get('/:id', verifyToken, BookingController.getBookingById);
 
-// Update booking status
-router.put('/:id', verifyToken, BookingController.updateBooking);
-
 // Cancel booking
 router.delete('/:id', verifyToken, BookingController.cancelBooking);
 

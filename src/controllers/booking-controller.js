@@ -61,29 +61,6 @@ const getBookingById = async (req, res) => {
 };
 
 /**
- * PUT : /booking/:id
- * Update booking status (user can only update own booking)
- * Only allows status update, not seats or cost
- * req.params : { id: 1 }
- * req.body : { status: "confirmed" }
- * req.user : { id: 1 }
- */
-const updateBooking = async (req, res) => {
-  try {
-    const booking = await BookingService.updateBooking({
-      bookingId: req.params.id,
-      userId: req.user.id,
-      status: req.body.status,
-    });
-    SuccessResponse.data = booking;
-    return res.status(StatusCodes.OK).json(SuccessResponse);
-  } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
-  }
-};
-
-/**
  * DELETE : /booking/:id
  * Cancel booking (user can only cancel own booking)
  * Automatically refunds seats to flight
@@ -121,7 +98,6 @@ module.exports = {
   createBooking,
   getBookings,
   getBookingById,
-  updateBooking,
   cancelBooking,
   makePayment,
 };
