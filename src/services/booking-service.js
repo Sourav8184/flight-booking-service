@@ -189,7 +189,7 @@ async function getBookingById(data) {
     }
 
     // Check if booking belongs to the user
-    if (booking.userId !== Number(data.userId)) {
+    if (data.role !== 'admin' && booking.userId !== Number(data.userId)) {
       throw new AppError('You can only view your own bookings', StatusCodes.FORBIDDEN);
     }
 

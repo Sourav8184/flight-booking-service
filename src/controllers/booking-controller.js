@@ -50,6 +50,7 @@ const getBookingById = async (req, res) => {
     const booking = await BookingService.getBookingById({
       bookingId: req.params.id,
       userId: req.user.id,
+      role: req.user.role,
     });
     SuccessResponse.data = booking;
     return res.status(StatusCodes.OK).json(SuccessResponse);
