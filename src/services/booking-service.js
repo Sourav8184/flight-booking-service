@@ -111,35 +111,50 @@ async function makePayment(data) {
   }
 }
 
-async function cancelBooking(bookingId) {
+async function cancelBooking(data) {
   const transaction = await db.sequelize.transaction();
   try {
-    const bookingDetail = await bookingRepository.getBookingDetails({ bookingId }, transaction);
+    const bookingDetail = await bookingRepository.getBookingDetails(data, transaction);
 
     if (!bookingDetail) {
+      await transaction.rollback();
       throw new AppError('Booking not found', StatusCodes.NOT_FOUND);
+    }
+
+    // Verify booking belongs to the user (unless admin)
+    if (data.role !== 'admin' && bookingDetail.userId !== Number(data.userId)) {
+      await transaction.rollback();
+      throw new AppError('You can only cancel your own bookings', StatusCodes.FORBIDDEN);
     }
 
     // if already cancelled, return
     if (bookingDetail.status === ENUMS.BOOKING_STATUS.CANCELLED) {
-      await transaction.commit();
+      await transaction.rollback();
       throw new AppError('Booking is already cancelled', StatusCodes.BAD_REQUEST);
     }
 
-    // increment the seats in flight service
+    // update the booking status to cancelled FIRST
+    const updatedBooking = await bookingRepository.updateBookingDetails(
+      data.bookingId,
+      { status: ENUMS.BOOKING_STATUS.CANCELLED },
+      transaction,
+    );
+
+    // ONLY refund seats if booking update is successful
+    // Call Flight Service to reserve (increment) seats for the selected flight
+    // This is an internal service-to-service request, so we use `x-service-key`
+    // to ensure only Booking Service can perform seat reservation.
     await axios.patch(
-      `${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${bookingDetail.flightId}/seats`,
+      `${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${bookingDetail.flightId}/reserve-seats`,
       {
         seats: bookingDetail.totalSeats,
         dec: false,
       },
-    );
-
-    // update the booking status to cancelled
-    const updatedBooking = await bookingRepository.updateBookingDetails(
-      bookingId,
-      { status: ENUMS.BOOKING_STATUS.CANCELLED },
-      transaction,
+      {
+        headers: {
+          'x-service-key': process.env.BOOKING_SERVICE_KEY,
+        },
+      },
     );
 
     await transaction.commit();

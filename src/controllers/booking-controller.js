@@ -65,11 +65,14 @@ const getBookingById = async (req, res) => {
  * Cancel booking (user can only cancel own booking)
  * Automatically refunds seats to flight
  * req.params : { id: 1 }
+ * req.user : { id: 1, role }
  */
 const cancelBooking = async (req, res) => {
   try {
     const booking = await BookingService.cancelBooking({
       bookingId: req.params.id,
+      userId: req.user.id,
+      role: req.user.role,
     });
     SuccessResponse.data = booking;
     return res.status(StatusCodes.OK).json(SuccessResponse);
