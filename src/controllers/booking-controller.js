@@ -1,23 +1,23 @@
 const { BookingService } = require('../services');
 const { StatusCodes } = require('http-status-codes');
-const { SuccessResponse, ErrorResponse } = require('../utils/common');
+const { SuccessResponse } = require('../utils/common');
 
 /**
  * POST : /booking
  * req.body : { flightId: 123, userId: 345, totalSeats: 2 }
  */
-const createBooking = async (req, res) => {
+const createBooking = async (req, res, next) => {
   try {
     const booking = await BookingService.createBooking({
       flightId: req.body.flightId,
       userId: req.user.id,
       totalSeats: req.body.totalSeats,
     });
-    SuccessResponse.data = booking;
-    return res.status(StatusCodes.CREATED).json(SuccessResponse);
+    return res
+      .status(StatusCodes.CREATED)
+      .json(new SuccessResponse(booking, 'Booking created successfully', StatusCodes.CREATED));
   } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
+    next(error);
   }
 };
 
@@ -26,16 +26,16 @@ const createBooking = async (req, res) => {
  * Get all bookings for authenticated user
  * req.user : { id: 1, email, role }
  */
-const getBookings = async (req, res) => {
+const getBookings = async (req, res, next) => {
   try {
     const bookings = await BookingService.getBookings({
       userId: req.user.id,
     });
-    SuccessResponse.data = bookings;
-    return res.status(StatusCodes.OK).json(SuccessResponse);
+    return res
+      .status(StatusCodes.OK)
+      .json(new SuccessResponse(bookings, 'Bookings retrieved successfully', StatusCodes.OK));
   } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
+    next(error);
   }
 };
 
@@ -45,18 +45,18 @@ const getBookings = async (req, res) => {
  * req.params : { id: 1 }
  * req.user : { id: 1 }
  */
-const getBookingById = async (req, res) => {
+const getBookingById = async (req, res, next) => {
   try {
     const booking = await BookingService.getBookingById({
       bookingId: req.params.id,
       userId: req.user.id,
       role: req.user.role,
     });
-    SuccessResponse.data = booking;
-    return res.status(StatusCodes.OK).json(SuccessResponse);
+    return res
+      .status(StatusCodes.OK)
+      .json(new SuccessResponse(booking, 'Booking retrieved successfully', StatusCodes.OK));
   } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
+    next(error);
   }
 };
 
@@ -67,33 +67,33 @@ const getBookingById = async (req, res) => {
  * req.params : { id: 1 }
  * req.user : { id: 1, role }
  */
-const cancelBooking = async (req, res) => {
+const cancelBooking = async (req, res, next) => {
   try {
     const booking = await BookingService.cancelBooking({
       bookingId: req.params.id,
       userId: req.user.id,
       role: req.user.role,
     });
-    SuccessResponse.data = booking;
-    return res.status(StatusCodes.OK).json(SuccessResponse);
+    return res
+      .status(StatusCodes.OK)
+      .json(new SuccessResponse(booking, 'Booking cancelled successfully', StatusCodes.OK));
   } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
+    next(error);
   }
 };
 
-const makePayment = async (req, res) => {
+const makePayment = async (req, res, next) => {
   try {
     const bookingPayment = await BookingService.makePayment({
       bookingId: req.body.bookingId,
       userId: req.body.userId,
       totalCost: req.body.totalCost,
     });
-    SuccessResponse.data = bookingPayment;
-    return res.status(StatusCodes.OK).json(SuccessResponse);
+    return res
+      .status(StatusCodes.OK)
+      .json(new SuccessResponse(bookingPayment, 'Payment successful', StatusCodes.OK));
   } catch (error) {
-    ErrorResponse.error = error;
-    return res.status(error.statusCode).json(ErrorResponse);
+    next(error);
   }
 };
 
